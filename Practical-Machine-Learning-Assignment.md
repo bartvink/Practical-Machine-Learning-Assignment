@@ -29,65 +29,106 @@ More information is available here: [http://groupware.les.inf.puc-rio.br/har](ht
 
 ## 2. Executive summary
 
+
 ## 3. Global setup
 
 ```r
 #Loading the required packages
 library(knitr); library(caret);         library(rattle);
-```
-
-```
-## Loading required package: lattice
-```
-
-```
-## Loading required package: ggplot2
-```
-
-```
-## Rattle: A free graphical interface for data mining with R.
-## Version 4.1.0 Copyright (c) 2006-2015 Togaware Pty Ltd.
-## Type 'rattle()' to shake, rattle, and roll your data.
-```
-
-```r
 library(rpart); library(rpart.plot);    library(randomForest);
-```
-
-```
-## randomForest 4.6-12
-```
-
-```
-## Type rfNews() to see new features/changes/bug fixes.
-```
-
-```
-## 
-## Attaching package: 'randomForest'
-```
-
-```
-## The following object is masked from 'package:ggplot2':
-## 
-##     margin
-```
-
-```r
 library(repmis)
 ```
 
 ```r
 #knitr setup
-opts_chunk$set(echo = TRUE) 
+opts_chunk$set(echo = TRUE, fig.width = 10, fig.height = 6)
 ```
 
-## 4. Exploratory data analyses
+## 4. Getting and cleaning data
+
+```r
+#Downloading the training and test data
+trainUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl  <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+#Reading the data and replacing #DIC/0! for NA
+training <- read.csv(url(trainUrl), na.strings = c("NA", "#DIV/0!", ""))
+testing  <- read.csv(url(testUrl),  na.strings = c("NA", "#DIV/0!", ""))
+
+#Show the data set dimensions 
+dim(training); dim(testing)
+```
+
+```
+## [1] 19622   160
+```
+
+```
+## [1]  20 160
+```
+The training data has 19622 observations and 160 variables (predictors). The testing data has 20 observations and the same 160 variables. In this analysis predicts the outcome of variable `classe` in the training set.
+
+To reduce the number of features you remove the variables with nearly zero variance, those variables are almost always NA. And removing the variables that intuitive don’t make sense for prediction. 
+
+```r
+#Removing NearZeroVariance variables
+nzv    <- nearZeroVar(training, saveMetrics = TRUE)
+train  <- training[, nzv$nzv == FALSE]
+
+nzv    <- nearZeroVar(testing, saveMetrics = TRUE)
+test   <- testing[, nzv$nzv == FALSE]
+
+#Removing all NA's
+train  <- train[, colSums(is.na(train)) == 0]
+test   <- test [, colSums(is.na(test))  == 0]
+
+#Removing the first six variables that, intuitive, don't make sense for prediction 
+train  <- train[, -c(1:6)]
+test   <- test[,  -c(1:6)]
+```
+The cleaned training and testing data stil have the same observations; 19622 for the training dataset and 20 for the testing dataset. The variables has changed to; 160 for the training dataset and 160 for the testing dataset.
+
+In order to get out-of-sample errors, the data split the cleaned training set into a training set (70%) for prediction and a validation set (30%) to compute the out-of-sample errors.
+
+```r
+set.seed(23456) 
+#Splitting data into a training and vailidation set
+inTrain    <- createDataPartition(train$classe, p = 0.7, list = FALSE)
+train_set  <- train[inTrain, ]
+valid_set  <- train[-inTrain, ]
+```
 
 ## 5. Prediction Algorithms
 
 ### 5.1 Classification trees
 
+```r
+#Instruct train to use 5-fold cross validation
+control <- trainControl(method = "cv", number = 5)
+
+#Fit the classification tree model 
+mod_ct  <- train(classe ~ ., method = "rpart", data = train_set, 
+                 trControl = control)
+
+#Create a fancyRpartPlot of the classification tree
+fancyRpartPlot(mod_ct$finalModel)
+```
+
+![](Practical-Machine-Learning-Assignment_files/figure-html/creating a classification tree-1.png)<!-- -->
+
+```r
+pred_ct <- predict(mod_ct, valid_set)
+confusionMatrix(pred_ct, valid_set$classe)$overall[1]
+```
+
+```
+##  Accuracy 
+## 0.4837723
+```
+
+
 ### 5.2 Random forests
 
-## 6. Prediction on Testing Set
+### 5.3 Generalized Boosted Regression
+
+## 7. Prediction on Testing Set
