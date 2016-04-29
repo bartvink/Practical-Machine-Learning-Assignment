@@ -118,15 +118,14 @@ $(document).ready(function () {
 <div id="TOC">
 <ul>
 <li><a href="#introduction">1. Introduction</a></li>
-<li><a href="#executive-summary">2. Executive summary</a></li>
-<li><a href="#global-setup">3. Global setup</a></li>
-<li><a href="#getting-and-cleaning-data">4. Getting and cleaning data</a></li>
-<li><a href="#prediction-algorithms">5. Prediction Algorithms</a><ul>
-<li><a href="#classification-trees">5.1 Classification trees</a></li>
-<li><a href="#random-forests">5.2 Random forests</a></li>
-<li><a href="#generalized-boosted-regression">5.3 Generalized Boosted Regression</a></li>
+<li><a href="#global-setup">2. Global setup</a></li>
+<li><a href="#getting-and-cleaning-data">3. Getting and cleaning data</a></li>
+<li><a href="#prediction-algorithms">4. Prediction Algorithms</a><ul>
+<li><a href="#classification-trees">4.1 Classification trees</a></li>
+<li><a href="#random-forests">4.2 Random forests</a></li>
+<li><a href="#generalized-boosted-regression">4.3 Generalized Boosted Regression</a></li>
 </ul></li>
-<li><a href="#prediction-on-testing-set">7. Prediction on Testing Set</a></li>
+<li><a href="#prediction-on-testing-set">5. Prediction on Testing Set</a></li>
 </ul>
 </div>
 
@@ -144,11 +143,8 @@ $(document).ready(function () {
 <p>The goal of this project is to predict the manner in which the participants did the exercise, i.e., Class A to E.</p>
 <p>More information is available here: <a href="http://groupware.les.inf.puc-rio.br/har" class="uri">http://groupware.les.inf.puc-rio.br/har</a> (Weight Lifting Exercise Dataset section).</p>
 </div>
-<div id="executive-summary" class="section level2">
-<h2>2. Executive summary</h2>
-</div>
 <div id="global-setup" class="section level2">
-<h2>3. Global setup</h2>
+<h2>2. Global setup</h2>
 <pre class="r"><code>#Loading the required packages
 library(knitr); library(caret); library(rattle);
 library(rpart); library(rpart.plot); library(randomForest);
@@ -157,7 +153,7 @@ library(repmis)</code></pre>
 opts_chunk$set(echo = TRUE, fig.width = 10, fig.height = 6)</code></pre>
 </div>
 <div id="getting-and-cleaning-data" class="section level2">
-<h2>4. Getting and cleaning data</h2>
+<h2>3. Getting and cleaning data</h2>
 <pre class="r"><code>#Downloading the training and test data
 trainUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
 testUrl  &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
@@ -195,9 +191,9 @@ train_set  &lt;- train[inTrain, ]
 valid_set  &lt;- train[-inTrain, ]</code></pre>
 </div>
 <div id="prediction-algorithms" class="section level2">
-<h2>5. Prediction Algorithms</h2>
+<h2>4. Prediction Algorithms</h2>
 <div id="classification-trees" class="section level3">
-<h3>5.1 Classification trees</h3>
+<h3>4.1 Classification trees</h3>
 <pre class="r"><code>#Instruct train to use 5-fold cross validation
 control &lt;- trainControl(method = &quot;cv&quot;, number = 5)
 
@@ -216,7 +212,7 @@ confusionMatrix(pred_ct, valid_set$classe)$overall[1]</code></pre>
 <p>The confusion matrix shows a accuracy rate of 0.48. Using a classification tree does not produce a very accurate prediction. It might be worthty to look if anothter methode gets a more accurate prediction.</p>
 </div>
 <div id="random-forests" class="section level3">
-<h3>5.2 Random forests</h3>
+<h3>4.2 Random forests</h3>
 <pre class="r"><code>#Fit the random forests model 
 mod_rf  &lt;- train(classe ~ ., method = &quot;rf&quot;, data = train_set, 
                  trControl = control)
@@ -229,7 +225,7 @@ confusionMatrix(pred_rf, valid_set$classe)$overall[1]</code></pre>
 <p>The confusion matrix shows a accuracy rate of 0.99 for the random forests model. This is allready quit high.</p>
 </div>
 <div id="generalized-boosted-regression" class="section level3">
-<h3>5.3 Generalized Boosted Regression</h3>
+<h3>4.3 Generalized Boosted Regression</h3>
 <pre class="r"><code>#Fit the generalized boosted regression model
 mod_gbm  &lt;- train(classe ~ ., method = &quot;gbm&quot;, data = train_set, 
                  trControl = control, verbose = FALSE)
@@ -243,12 +239,27 @@ confusionMatrix(pred_gbm, valid_set$classe)$overall[1]</code></pre>
 </div>
 </div>
 <div id="prediction-on-testing-set" class="section level2">
-<h2>7. Prediction on Testing Set</h2>
+<h2>5. Prediction on Testing Set</h2>
 <p>The most accurate preforming model is the Random Forests model with an Accuracy 0.99. The expected out-of-sample error is 100 - 0.9942 = 0.58%.</p>
-<pre class="r"><code>mod_fin &lt;- predict(mod_rf, test)
+<pre class="r"><code># prediction on testset
+mod_fin &lt;- predict(mod_rf, test)
 mod_fin</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
+<pre class="r"><code># convert predictions to character vector
+mod_fin &lt;- as.character(mod_fin)
+
+# create function to write predictions to files
+pred_to_file &lt;- function(x) {
+        n &lt;- length(x)
+        for(i in 1:n) {
+                filename &lt;- paste0(&quot;problem_id_&quot;, i, &quot;.txt&quot;)
+                write.table(x[i], file = filename, quote=F, row.names=F, col.names=F)
+    }
+}
+
+# create prediction files for submition
+pred_to_file(mod_fin)</code></pre>
 </div>
 
 

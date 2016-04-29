@@ -27,10 +27,7 @@ the exercise, i.e., Class A to E.
 More information is available here: [http://groupware.les.inf.puc-rio.br/har](http://groupware.les.inf.puc-rio.br/har) 
 (Weight Lifting Exercise Dataset section).
 
-## 2. Executive summary
-
-
-## 3. Global setup
+## 2. Global setup
 
 ```r
 #Loading the required packages
@@ -44,7 +41,7 @@ library(repmis)
 opts_chunk$set(echo = TRUE, fig.width = 10, fig.height = 6)
 ```
 
-## 4. Getting and cleaning data
+## 3. Getting and cleaning data
 
 ```r
 #Downloading the training and test data
@@ -98,9 +95,9 @@ train_set  <- train[inTrain, ]
 valid_set  <- train[-inTrain, ]
 ```
 
-## 5. Prediction Algorithms
+## 4. Prediction Algorithms
 
-### 5.1 Classification trees
+### 4.1 Classification trees
 
 ```r
 #Instruct train to use 5-fold cross validation
@@ -128,7 +125,7 @@ confusionMatrix(pred_ct, valid_set$classe)$overall[1]
 ```
 The confusion matrix shows a accuracy rate of 0.48. Using a classification tree does not produce a very accurate prediction. It might be worthty to look if anothter methode gets a more accurate prediction. 
 
-### 5.2 Random forests
+### 4.2 Random forests
 
 ```r
 #Fit the random forests model 
@@ -146,7 +143,7 @@ confusionMatrix(pred_rf, valid_set$classe)$overall[1]
 ```
 The confusion matrix shows a accuracy rate of 0.99 for the random forests model. This is allready quit high. 
 
-### 5.3 Generalized Boosted Regression
+### 4.3 Generalized Boosted Regression
 
 ```r
 #Fit the generalized boosted regression model
@@ -164,10 +161,11 @@ confusionMatrix(pred_gbm, valid_set$classe)$overall[1]
 ```
 The confusion matrix shows a accuracy rate of 0.96 for the generalized boosted regression model. This means it is the second best preforming model.  
 
-## 7. Prediction on Testing Set
+## 5. Prediction on Testing Set
 The most accurate preforming model is the Random Forests model with an Accuracy 0.99. The expected out-of-sample error is 100 - 0.9942 = 0.58%.
 
 ```r
+# prediction on testset
 mod_fin <- predict(mod_rf, test)
 mod_fin
 ```
@@ -175,6 +173,23 @@ mod_fin
 ```
 ##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E
+```
+
+```r
+# convert predictions to character vector
+mod_fin <- as.character(mod_fin)
+
+# create function to write predictions to files
+pred_to_file <- function(x) {
+        n <- length(x)
+        for(i in 1:n) {
+                filename <- paste0("problem_id_", i, ".txt")
+                write.table(x[i], file = filename, quote=F, row.names=F, col.names=F)
+    }
+}
+
+# create prediction files for submition
+pred_to_file(mod_fin)
 ```
 
 
