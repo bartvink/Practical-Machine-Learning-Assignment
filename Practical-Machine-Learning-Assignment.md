@@ -34,8 +34,8 @@ More information is available here: [http://groupware.les.inf.puc-rio.br/har](ht
 
 ```r
 #Loading the required packages
-library(knitr); library(caret);         library(rattle);
-library(rpart); library(rpart.plot);    library(randomForest);
+library(knitr); library(caret); library(rattle);
+library(rpart); library(rpart.plot); library(randomForest);
 library(repmis)
 ```
 
@@ -91,7 +91,7 @@ The cleaned training and testing data stil have the same observations; 19622 for
 In order to get out-of-sample errors, the data split the cleaned training set into a training set (70%) for prediction and a validation set (30%) to compute the out-of-sample errors.
 
 ```r
-set.seed(23456) 
+set.seed(23456)
 #Splitting data into a training and vailidation set
 inTrain    <- createDataPartition(train$classe, p = 0.7, list = FALSE)
 train_set  <- train[inTrain, ]
@@ -114,9 +114,10 @@ mod_ct  <- train(classe ~ ., method = "rpart", data = train_set,
 fancyRpartPlot(mod_ct$finalModel)
 ```
 
-![](Practical-Machine-Learning-Assignment_files/figure-html/creating a classification tree-1.png)<!-- -->
+![](Practical-Machine-Learning-Assignment_files/figure-html/creating a classification tree model-1.png)<!-- -->
 
 ```r
+#Calculate the accuracy 
 pred_ct <- predict(mod_ct, valid_set)
 confusionMatrix(pred_ct, valid_set$classe)$overall[1]
 ```
@@ -125,10 +126,55 @@ confusionMatrix(pred_ct, valid_set$classe)$overall[1]
 ##  Accuracy 
 ## 0.4837723
 ```
-
+The confusion matrix shows a accuracy rate of 0.48. Using a classification tree does not produce a very accurate prediction. It might be worthty to look if anothter methode gets a more accurate prediction. 
 
 ### 5.2 Random forests
 
+```r
+#Fit the random forests model 
+mod_rf  <- train(classe ~ ., method = "rf", data = train_set, 
+                 trControl = control)
+
+#Calculate the accuracy 
+pred_rf <- predict(mod_rf, valid_set)
+confusionMatrix(pred_rf, valid_set$classe)$overall[1]
+```
+
+```
+##  Accuracy 
+## 0.9942226
+```
+The confusion matrix shows a accuracy rate of 0.99 for the random forests model. This is allready quit high. 
+
 ### 5.3 Generalized Boosted Regression
 
+```r
+#Fit the generalized boosted regression model
+mod_gbm  <- train(classe ~ ., method = "gbm", data = train_set, 
+                 trControl = control, verbose = FALSE)
+
+#Calculate the accuracy
+pred_gbm <- predict(mod_gbm, valid_set)
+confusionMatrix(pred_gbm, valid_set$classe)$overall[1]
+```
+
+```
+##  Accuracy 
+## 0.9648258
+```
+The confusion matrix shows a accuracy rate of 0.96 for the generalized boosted regression model. This means it is the second best preforming model.  
+
 ## 7. Prediction on Testing Set
+The most accurate preforming model is the Random Forests model with an Accuracy 0.99. The expected out-of-sample error is 100 - 0.9942 = 0.58%.
+
+```r
+mod_fin <- predict(mod_rf, test)
+mod_fin
+```
+
+```
+##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E
+```
+
+

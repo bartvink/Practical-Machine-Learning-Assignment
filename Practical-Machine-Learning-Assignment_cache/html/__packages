@@ -8,3 +8,6 @@ rpart
 rpart.plot
 randomForest
 repmis
+survival
+gbm
+plyr
